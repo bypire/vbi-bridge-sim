@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>VBI Simulator — vehicle crossing a bridge</title>
+  <title>VBI Simulator, vehicle crossing a bridge</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <header>
-    <h1>Vehicle–Bridge Interaction</h1>
+    <h1>Vehicle-Bridge Interaction</h1>
     <p class="sub">A quarter-car crosses a simply-supported beam. Deflection is
       magnified <strong id="magLabel">—</strong> (real peak
       <strong id="peakLabel">—</strong>); colour shows bending moment.</p>
@@ -38,19 +38,19 @@
         <svg id="plotDefl" viewBox="0 0 430 170"></svg>
       </figure>
       <figure>
-        <figcaption>Wheel–bridge contact force [kN]</figcaption>
+        <figcaption>Wheel-bridge contact force [kN]</figcaption>
         <svg id="plotForce" viewBox="0 0 430 170"></svg>
       </figure>
     </div>
   </section>
 
   <footer>
-    <p><strong>Method:</strong> Euler–Bernoulli beam FEM (consistent M, K) coupled
+    <p><strong>Method:</strong> Euler-Bernoulli beam FEM (consistent M, K) coupled
       to a 2-DOF quarter-car, RK4 time integration. Verified against the Frýba
       moving-force closed form (V2) and analytical references (V1). The axle
       weight is recovered from the bridge response by Moses' B-WIM algorithm.</p>
     <p class="limit"><strong>Honest limits:</strong> single span, linear, smooth
-      road (no roughness), one axle. Displacements are tiny in reality — hence the
+      road (no roughness), one axle. Displacements are tiny in reality, hence the
       magnification factor, shown above so nothing is faked.</p>
   </footer>
 
