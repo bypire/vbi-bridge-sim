@@ -1,5 +1,11 @@
-# Real-data archives + extracts (fetched from Zenodo, not committed — see verify_kw51.py)
+# Real-data archives and extracts (fetched from Zenodo, not committed; see verify_kw51.py)
 data/
+
+# Internal planning notes, kept out of the repo
+CLAUDE.md
+NEXT_SESSION.md
+SESSION_HANDOFF.md
+CHAIR_FIT.md
 
 # Python
 __pycache__/
@@ -8,5 +14,8 @@ __pycache__/
 # OS / editor cruft
 .DS_Store
 Thumbs.db
+
+# Local Claude Code settings (machine-specific, not for the repo)
+.claude/
 
 # Keep output/*.png (portfolio figures) and output/*.js (injected web data) tracked.
