@@ -1,0 +1,12 @@
+# Real-data archives + extracts (fetched from Zenodo, not committed — see verify_kw51.py)
+data/
+
+# Python
+__pycache__/
+*.pyc
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+
+# Keep output/*.png (portfolio figures) and output/*.js (injected web data) tracked.
