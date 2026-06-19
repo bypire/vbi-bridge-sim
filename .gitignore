@@ -19,3 +19,8 @@ Thumbs.db
 .claude/
 
 # Keep output/*.png (portfolio figures) and output/*.js (injected web data) tracked.
+
+# LaTeX build artifacts
+report/*.log
+report/*.aux
+report/*.out
