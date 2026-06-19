@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BridgeBeat — weigh it, diagnose it, and see it for real</title>
+<style>
+  :root { --bg:#070b12; --panel:#0d1420; --ink:#e8eef7; --dim:#7c8aa0;
+          --hot:#ff5a5a; --cold:#4aa8ff; --ok:#43e0a0; --warn:#ffb454; }
+  * { box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body { margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    scroll-snap-type:y mandatory; overflow-x:hidden; }
+  .act { height:100vh; scroll-snap-align:start; position:relative;
+    padding:78px 46px 30px; display:flex; flex-direction:column; }
+  canvas { display:block; width:100%; flex:1; min-height:0; }
+
+  /* fixed chrome */
+  .brand { position:fixed; top:20px; left:46px; z-index:30; font-size:20px;
+    font-weight:800; letter-spacing:.3px; pointer-events:none; }
+  .brand .b { color:var(--ok); }
+  .nav { position:fixed; top:22px; right:46px; z-index:30; display:flex; gap:8px;
+    align-items:center; }
+  .nav a { font-size:12px; color:var(--dim); text-decoration:none; padding:5px 12px;
+    border:1px solid #1e2940; border-radius:20px; background:rgba(13,20,32,.6); }
+  .nav a:hover { color:var(--ink); border-color:#33425f; }
+  .nav a.lab { color:#8b7ad6; }
+  /* mode toggle */
+  .modesw { display:flex; border:1px solid #28344a; border-radius:20px; overflow:hidden;
+    background:rgba(13,20,32,.6); margin-left:6px; cursor:pointer; }
+  .modesw span { font-size:12px; padding:5px 13px; color:var(--dim); user-select:none; }
+  .modesw span.on { background:var(--ok); color:#06210f; font-weight:700; }
+  .scrollhint { position:fixed; bottom:14px; left:50%; transform:translateX(-50%);
+    z-index:20; font-size:11px; color:var(--dim); letter-spacing:1px;
+    animation:bob 1.8s infinite; pointer-events:none; }
+  @keyframes bob { 50%{ transform:translateX(-50%) translateY(5px);} }
+
+  .head .n { font-size:12px; color:var(--ok); letter-spacing:2px; font-weight:700; }
+  .head h2 { margin:3px 0 4px; font-size:25px; font-weight:800; }
+  .head p { margin:0; font-size:15px; color:#c4d0e0; max-width:780px; line-height:1.5; }
+
+  .stage { display:flex; gap:24px; flex:1; min-height:0; }
+  .stagecanvas { flex:1; min-width:0; position:relative; }
+  .side { width:270px; flex-shrink:0; display:flex; flex-direction:column; gap:13px;
+    padding-top:6px; }
+  .card { background:var(--panel); border:1px solid #1c2740; border-radius:12px;
+    padding:13px 16px; }
+  .card .k { font-size:11px; color:var(--dim); text-transform:uppercase;
+    letter-spacing:1.2px; }
+  .card .v { font-size:30px; font-weight:800; font-variant-numeric:tabular-nums;
+    margin-top:2px; }
+  .card .v small { font-size:14px; color:var(--dim); font-weight:500; }
+  .card .sub { font-size:12.5px; color:#9fb0c6; margin-top:5px; line-height:1.45; }
+  input[type=range]{ width:100%; accent-color:var(--ok); margin-top:8px; }
+  .ctrlrow { display:flex; align-items:center; gap:10px; }
+  .verdict { font-size:19px; font-weight:800; }
+  .verdict.ok { color:var(--ok); } .verdict.bad { color:var(--hot); }
+  .legend { font-size:11px; color:var(--dim); }
+  .legend .bar { width:120px; height:8px; border-radius:4px; margin:5px 0 2px;
+    background:linear-gradient(90deg,var(--cold),#d9d36a,var(--hot)); }
+  button { background:#162133; color:var(--ink); border:1px solid #28344a;
+    border-radius:8px; padding:8px 14px; font-size:13px; cursor:pointer; }
+  button:hover { background:#1d2c44; }
+  .pp { width:40px; }
+  .badge { font-size:11px; color:var(--dim); }
+  .badge .live { color:var(--hot); font-weight:700; letter-spacing:1px; }
+  .badge .live::before { content:"\25CF"; margin-right:5px; animation:blink 1.4s infinite; }
+  @keyframes blink { 50%{opacity:.25;} }
+  @keyframes fade { from{opacity:0;transform:translateY(-5px);} to{opacity:1;transform:none;} }
+  .reveal { position:absolute; left:50%; top:30%; transform:translate(-50%,-50%) scale(.94);
+    text-align:center; opacity:0; transition:opacity .55s, transform .55s;
+    pointer-events:none; width:min(600px,86vw); background:rgba(8,12,20,.92);
+    border:1px solid #28344a; border-radius:16px; padding:24px 28px;
+    box-shadow:0 18px 60px rgba(0,0,0,.6); }
+  .reveal.show { opacity:1; transform:translate(-50%,-50%) scale(1); }
+  .reveal .big { font-size:27px; font-weight:800; line-height:1.2; }
+  .reveal .big .up { color:var(--ok); }
+  .reveal .small { font-size:14px; color:#c4d0e0; margin-top:11px; line-height:1.5; }
+  /* the "mechanism" panels — visible formulas + live numbers (math mode) */
+  .mech { background:#0a1018; border:1px solid #1c2740; border-left:3px solid var(--ok);
+    border-radius:10px; padding:12px 15px; }
+  .mech .t { font-size:10px; text-transform:uppercase; letter-spacing:1.3px;
+    color:var(--ok); margin-bottom:8px; }
+  .mech .row { font-family:"Cambria Math","Consolas","Georgia",serif; font-size:14px;
+    color:#dbe5f2; margin:7px 0; line-height:1.45; }
+  .mech .lab { display:block; font-family:-apple-system,"Segoe UI",sans-serif;
+    font-size:10.5px; color:var(--dim); letter-spacing:.2px; margin-bottom:1px;
+    text-transform:none; }
+  .mech .live { color:var(--ok); font-weight:700; }
+  .intro p { font-size:15px; color:#c4d0e0; line-height:1.6; }
+  /* Act 5 — bridge centred on top, live data row + live-math row below */
+  .v5stats { display:flex; gap:12px; margin-top:10px; }
+  .v5stat { flex:1; background:var(--panel); border:1px solid #1c2740; border-radius:10px;
+    padding:9px 14px; }
+  .v5stat .k { font-size:10px; text-transform:uppercase; letter-spacing:1.1px; color:var(--dim); }
+  .v5stat .v { font-size:25px; font-weight:800; font-variant-numeric:tabular-nums; line-height:1.15; }
+  .v5stat .v small { font-size:13px; color:var(--dim); font-weight:600; }
+  .v5stat .s { font-size:11px; color:#9fb0c6; margin-top:1px; }
+  .v5math { margin-top:11px; background:#0a1018; border:1px solid #1c2740;
+    border-left:3px solid var(--ok); border-radius:10px; padding:10px 16px; }
+  .v5math .t { font-size:10px; text-transform:uppercase; letter-spacing:1.3px; color:var(--ok); margin-bottom:5px; }
+  .v5math .grid { display:grid; grid-template-columns:1fr 1fr; gap:3px 26px; }
+  .v5math .r { display:flex; align-items:baseline; gap:9px; padding:3px 0; font-size:12.5px; }
+  .v5math .r .ex { color:#aebbcd; flex:1; }
+  .v5math .r .eq { font-family:"Cambria Math","Consolas","Georgia",serif; color:#dbe5f2; white-space:nowrap; }
+  .v5math .r .lv { color:var(--ok); font-weight:700; white-space:nowrap; font-variant-numeric:tabular-nums; }
+  /* mode visibility */
+  .only-math { display:none; }
+  body.math .only-math { display:block; }
+  body.math .only-simple { display:none; }
+</style>
+</head>
+<body class="simple">
+<div class="brand">Bridge<span class="b">Beat</span></div>
+<nav class="nav">
+  <a href="#act0">Intro</a><a href="#act1">1 · Weigh</a><a href="#act2">2 · Diagnose</a><a href="#act3">3 · Real</a><a href="#act4">4 · Stakes</a><a href="#act5">5 · Traffic</a>
+  <a href="index.html" class="lab" id="lablink" title="advanced engineering tools">⚙ Lab</a>
+  <div class="modesw" id="modesw" title="Simple = plain language · Math = equations, error bars, references">
+    <span id="m-simple" class="on">Simple</span><span id="m-math">Math</span></div>
+</nav>
+<div class="scrollhint">scroll ↓</div>
+
+<!-- ============ ACT 0 — what this actually is ============ -->
+<section class="act intro" id="act0" style="justify-content:center">
+  <div style="max-width:920px">
+    <div class="n" style="color:var(--ok);font-size:12px;letter-spacing:2px;font-weight:700">
+      A WORKING BRIDGE-PHYSICS ENGINE — NOT A SLIDER TOY</div>
+    <h2 style="font-size:29px;margin:8px 0 14px;line-height:1.25">We simulate how a bridge
+      bends under traffic from first principles — then run the physics <span style="color:var(--ok)">backwards</span>
+      to weigh the trucks and read the bridge's health.</h2>
+    <p>Every line you'll see is <b>computed from the equations of structural dynamics</b>,
+      not drawn by hand. A truck crosses → a finite-element model of the deck computes the
+      bending → we <b>invert</b> that bending to recover the truck's weight (Bridge
+      Weigh-in-Motion). The same vibration reveals damage, and on a <b>real bridge</b>
+      (KW51, Belgium) it tracks 16 months of health. Five acts below — and the
+      <b>Math</b> switch (top-right) opens the back of the watch: the real formulas and
+      live numbers doing the work.</p>
+    <div class="mech only-math" style="margin-top:18px">
+      <div class="t">the movement under the dial — what the engine actually computes</div>
+      <div class="row"><span class="lab">FORWARD · Euler–Bernoulli beam, 2-node elements (2 DOF/node), consistent mass M &amp; stiffness K</span>
+        M&nbsp;ü&nbsp;+&nbsp;C&nbsp;u̇&nbsp;+&nbsp;K&nbsp;u&nbsp;=&nbsp;F(t)</div>
+      <div class="row"><span class="lab">LOAD · moving wheel placed by cubic Hermite shape functions; marched in time</span>
+        F(t)&nbsp;=&nbsp;N(x(t))·P&nbsp;&nbsp;—&nbsp;&nbsp;RK4 &amp; implicit Newmark-β</div>
+      <div class="row"><span class="lab">INVERSE · fit the measured moment to the section influence line (Moses), regularized + Bayesian</span>
+        M(t)=Σₖ&nbsp;Pₖ·IL(xₖ)&nbsp;→&nbsp;P&nbsp;=&nbsp;(CᵀC)⁻¹CᵀM&nbsp;&nbsp;(±95% CI)</div>
+      <div class="row"><span class="lab">VALIDATE · real modal frequencies (KW51) · fatigue economics · multiple-presence gate</span>
+        fₙ=(nπ/L)²√(EI/m̄)/2π&nbsp;·&nbsp;damage∝(W/W_ref)ᵐ&nbsp;·&nbsp;weigh iff 1 vehicle on span</div>
+    </div>
+    <p class="only-simple" style="margin-top:16px;color:var(--dim);font-size:13px">
+      Tip: flip <b>Math</b> (top-right) at any point to see the equations behind that step.</p>
+    <div class="scrollhint" style="position:static;margin-top:22px;animation:none">scroll to begin ↓</div>
+  </div>
+</section>
+
+<!-- ============ ACT 1 — weigh a moving truck ============ -->
+<section class="act" id="act1">
+  <div class="head"><div class="n">01 · THE BRIDGE IS A SCALE</div>
+    <h2>Weigh a truck while it rolls — no scale, no stopping</h2>
+    <p class="cap" data-simple="Drag the truck across. The deck dips by less than the thickness of a coin — yet that tiny dip, read at one point, is enough to weigh the truck while it moves."
+       data-math="A moving load deflects the beam; the mid-span bending moment, fit to the section's influence line (Moses' least squares), recovers the static axle weight. Deflection is sub-millimetre, so the shape is drawn magnified.">
+      Drag the truck across. The deck dips by less than the thickness of a coin — yet
+      that tiny dip, read at one point, is enough to weigh the truck while it moves.</p></div>
+  <div class="stage">
+    <div class="stagecanvas"><canvas id="cv1"></canvas></div>
+    <div class="side">
+      <div class="card"><div class="k">this truck weighs</div>
+        <div class="v"><span id="recT">—</span> <small>tonnes</small></div>
+        <div class="sub only-simple">measured from the bridge's dip alone — never put on a scale.</div>
+        <div class="sub only-math">B-WIM (Moses) recovery · true <b id="trueT">—</b> t ·
+          error <b id="errP">—</b> · DAF <b id="dafV">—</b></div></div>
+      <div class="card"><div class="k">how much the deck dips right now</div>
+        <div class="v" style="font-size:24px"><span id="sagMM">0.0</span> <small>mm</small></div>
+        <div class="sub">peak <b id="peakMM">—</b> mm ≈ the thickness of a 1-cent coin.
+          <span class="only-math">Shape drawn ×<b id="dispMag">—</b>; data magnification ×<b id="dataMag">—</b>.</span></div></div>
+      <div class="card"><div class="k ctrlrow" style="justify-content:space-between">
+          <span>truck speed</span><span><b id="spK">—</b> km/h</span></div>
+        <input type="range" id="spd" min="0" max="5" step="1" value="2">
+        <div class="sub only-simple">faster trucks bounce the bridge more, so the weight gets a little harder to read.</div>
+        <div class="sub only-math">higher speed → larger DAF → larger dynamic B-WIM error (see error above).</div></div>
+      <div class="mech only-math"><div class="t">⚙ the mechanism</div>
+        <div class="row"><span class="lab">equation of motion (beam FEM)</span>M&nbsp;ü&nbsp;+&nbsp;C&nbsp;u̇&nbsp;+&nbsp;K&nbsp;u&nbsp;=&nbsp;F(t)</div>
+        <div class="row"><span class="lab">marched by numerical integration (RK4), step by step in time</span>u̇&nbsp;=&nbsp;v,&nbsp;&nbsp;v̇&nbsp;=&nbsp;M⁻¹(F−Ku−Cu̇)</div>
+        <div class="row"><span class="lab">weigh by least-squares signal inversion (Moses)</span>P&nbsp;=&nbsp;(CᵀC)⁻¹CᵀM&nbsp;→&nbsp;<span class="live" id="mq1">—</span></div>
+        <div class="row"><span class="lab">dynamic amplification</span>DAF&nbsp;=&nbsp;max|w|/w<sub>static</sub>&nbsp;=&nbsp;<span class="live" id="mq1d">—</span></div></div>
+      <div class="ctrlrow"><button class="pp" id="pp1">⏸</button>
+        <input type="range" id="scrub1" min="0" max="100" step="1" value="0" style="flex:1"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ACT 2 — diagnose from the wiggle ============ -->
+<section class="act" id="act2">
+  <div class="head"><div class="n">02 · THE SAME WIGGLE REVEALS DAMAGE</div>
+    <h2>Hidden damage makes the bridge sing a lower note</h2>
+    <p class="cap" data-simple="Damage softens the bridge, so it vibrates a little slower — a lower 'note'. Drag the damage up and watch the note slide left. A passing car can hear this with no sensors on the bridge."
+       data-math="A local EI loss lowers the natural frequency. The plotted spectrum is the bridge's vibration energy vs frequency; its peak (detected from a passing vehicle) marches down as mid-span stiffness drops.">
+      Damage softens the bridge, so it vibrates a little slower — a lower "note". Drag
+      the damage up and watch the note slide left. A passing car can hear this with no
+      sensors on the bridge.</p></div>
+  <div class="stage">
+    <div class="stagecanvas"><canvas id="cv2"></canvas></div>
+    <div class="side">
+      <div class="card"><div class="k">verdict</div>
+        <div class="verdict ok" id="verdict">HEALTHY</div>
+        <div class="sub" id="vsub"></div></div>
+      <div class="card"><div class="k ctrlrow" style="justify-content:space-between">
+          <span>damage at mid-span</span><span><b id="sevV">0</b> %</span></div>
+        <input type="range" id="sev" min="0" max="5" step="1" value="0">
+        <div class="sub only-simple">the bridge's note: <b id="fV">—</b> Hz (<b id="dropV">—</b>)</div>
+        <div class="sub only-math">f<sub>detected</sub> = <b id="fV2">—</b> Hz, <b id="dropV2">—</b> below healthy ·
+          peak from vehicle FFT</div></div>
+      <div class="card only-math"><div class="k">honest limit</div>
+        <div class="sub">frequency says <b>something changed</b>, not <b>where</b> — a single
+          global mode can't localize damage. Confirmed on real data in Act 3.</div></div>
+      <div class="mech only-math"><div class="t">⚙ the mechanism</div>
+        <div class="row"><span class="lab">beam natural frequency</span>f₁&nbsp;=&nbsp;(π/L)²√(EI/m̄)&nbsp;/&nbsp;2π</div>
+        <div class="row"><span class="lab">damage softens the section</span>EI&nbsp;→&nbsp;(1−d)·EI&nbsp;⇒&nbsp;f₁&nbsp;↓&nbsp;<span class="live" id="mq2">—</span></div>
+        <div class="row"><span class="lab">read from the vehicle's acceleration spectrum (FFT)</span>f̂&nbsp;=&nbsp;argmax&nbsp;|FFT(a(t))|</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ACT 3 — the real bridge heartbeat ============ -->
+<section class="act" id="act3">
+  <div class="head" style="display:flex;justify-content:space-between;align-items:flex-start">
+    <div><div class="n">03 · AND IT'S REAL</div>
+      <h2>A real bridge's pulse — and the day they repaired it</h2>
+      <p class="cap" data-simple="Everything so far was a simulation. This is not. It's a real bridge's vibration, measured every single day for 16 months — drawn like a heart monitor."
+         data-math="Real tracked natural frequency (mode 5) of the KW51 bridge, daily for 16 months, coloured by deck temperature. A retrofit (stiffening) steps the frequency up. A reduced beam tuned to KW51's f1 matches it but not the higher modes (calibrate_kw51.py) — we anchor behaviour, not geometry.">
+        Everything so far was a simulation. This is not. It's a real bridge's vibration,
+        measured every single day for 16 months — drawn like a heart monitor.</p>
+      <div class="mech only-math" style="margin-top:10px;max-width:680px">
+        <div class="t">⚙ the mechanism</div>
+        <div class="row"><span class="lab">remove the temperature trend (fit on the healthy period)</span>f&nbsp;=&nbsp;a·T&nbsp;+&nbsp;b&nbsp;&nbsp;→&nbsp;residual</div>
+        <div class="row"><span class="lab">a reduced beam tuned to f₁ matches it, but not the higher modes</span>fₙ&nbsp;=&nbsp;n²·f₁&nbsp;&nbsp;(anchor behaviour, not geometry)</div></div></div>
+    <div class="badge" style="text-align:right;white-space:nowrap">
+      <div class="live">REAL DATA</div><div>KW51 · Leuven, BE</div>
+      <div class="only-math">Zenodo 3745914</div></div>
+  </div>
+  <div class="stagecanvas" style="flex:1;min-height:0;position:relative">
+    <canvas id="cv3"></canvas>
+    <div class="legend" style="position:absolute;right:6px;top:0;text-align:right">
+      deck temperature<div class="bar" style="margin-left:auto"></div>
+      <span id="tlo"></span> → <span id="thi"></span></div>
+    <div class="reveal" id="reveal">
+      <div class="big">🔧 They strengthened the bridge.<br>And you can <span class="up">see it</span>.</div>
+      <div class="small" id="revealSmall"></div></div>
+    <div style="position:absolute;left:0;bottom:2px;display:flex;gap:30px;align-items:center">
+      <div><div class="k" style="font-size:11px;color:var(--dim)">DATE</div>
+        <div style="font-size:22px;font-weight:700" id="roDate">—</div></div>
+      <div><div class="k" style="font-size:11px;color:var(--dim)">FREQUENCY</div>
+        <div style="font-size:22px;font-weight:700"><span id="roF">—</span>
+          <small style="font-size:12px;color:var(--dim)">Hz</small></div></div>
+      <button id="rep3">↺ Replay 16 months</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ACT 4 — why it matters / where it goes ============ -->
+<section class="act" id="act4" style="justify-content:center;align-items:center;text-align:center">
+  <div style="max-width:1000px">
+    <div class="n" style="color:var(--ok);font-size:12px;letter-spacing:2px;font-weight:700">04 · NOT A TOY</div>
+    <h2 style="font-size:30px;margin:6px 0 6px">A scale, an inspector, and an
+      <span style="color:var(--ok)">accountant</span> for every bridge</h2>
+    <p class="cap" style="color:#c4d0e0;font-size:15px;max-width:780px;margin:0 auto 26px;line-height:1.55"
+       data-simple="Heavy trucks don't do a bit more damage — they do wildly more. So a few overloaded trucks cause most of the wear, and the same trick that weighs them flags the culprits and prices the damage."
+       data-math="Fatigue damage scales with the cube-to-4th power of axle load (Eurocode EN 1993-1-9 / AASHTO). The overloaded tail dominates cumulative damage; B-WIM identifies it and an asset-depreciation model prices it.">
+      Heavy trucks don't do a bit more damage — they do wildly more. So a few overloaded
+      trucks cause most of the wear, and the same trick that weighs them flags the
+      culprits and prices the damage.</p>
+    <div style="display:flex;gap:20px;justify-content:center;flex-wrap:wrap">
+      <div class="card" style="width:240px;text-align:left">
+        <div class="k">a 2× overloaded truck does</div>
+        <div class="v" style="color:var(--hot)"><span data-count="16" data-suf="×">0×</span></div>
+        <div class="sub">the road damage of a legal one.
+          <span class="only-math">8× for a steel detail (m=3); exact from the power law.</span></div></div>
+      <div class="card" style="width:240px;text-align:left">
+        <div class="k">overloaded 20% of trucks cause</div>
+        <div class="v" style="color:var(--warn)"><span data-count="49" data-suf="%">0%</span></div>
+        <div class="sub">of the bridge's entire wear bill — and B-WIM catches exactly those trucks.</div></div>
+      <div class="card" style="width:240px;text-align:left">
+        <div class="k">one heavy truck eats</div>
+        <div class="v" style="color:var(--ok)">€<span data-count="10" data-suf="">0</span></div>
+        <div class="sub">of bridge life in a single crossing.
+          <span class="only-math">vs €0.80 legal; asset-depreciation estimate.</span></div></div>
+    </div>
+    <div class="mech only-math" style="max-width:680px;margin:22px auto 0;text-align:left">
+      <div class="t">⚙ the mechanism</div>
+      <div class="row"><span class="lab">S–N (Wöhler) fatigue law → damage per pass</span>N(Δσ)&nbsp;=&nbsp;N_C(Δσ_C/Δσ)ᵐ&nbsp;⇒&nbsp;d&nbsp;∝&nbsp;(W/W_ref)ᵐ&nbsp;&nbsp;(m=3 steel, 4 pavement)</div>
+      <div class="row"><span class="lab">Miner's rule sums it; cost = depreciation</span>D&nbsp;=&nbsp;Σ&nbsp;nᵢ/Nᵢ&nbsp;&nbsp;·&nbsp;&nbsp;€&nbsp;=&nbsp;d&nbsp;×&nbsp;replacement</div></div>
+    <p class="only-math" style="color:var(--dim);font-size:12px;margin-top:18px;max-width:780px;margin-left:auto;margin-right:auto;line-height:1.5">
+      Verified against closed-form physics (Frýba, modal frequencies) · validated on the
+      real KW51 bridge · ratios exact per Eurocode EN 1993-1-9 / AASHTO · euro figures are
+      an explicit asset-depreciation illustration. See REPORT.pdf.</p>
+    <p class="only-simple" style="color:var(--dim);font-size:12px;margin-top:26px">
+      Built on real physics, checked against textbook formulas and a real bridge. Flip the
+      <b>Math</b> switch (top-right) to see the equations.</p>
+  </div>
+</section>
+
+<!-- ============ ACT 5 — a 500 m viaduct, real traffic, from above ============ -->
+<section class="act" id="act5">
+  <div class="head"><div class="n">05 · TRAFFIC, FROM ABOVE</div>
+    <h2>A 500-metre viaduct, a day of real traffic — watched like an inspector</h2>
+    <p class="cap" data-simple="Step back. A half-kilometre viaduct on its piers, carrying a full stream of traffic — cars and trucks, dozens on the deck at once. We watch from above like an inspector: counting the trucks, flagging the overloaded, and tallying the wear they leave behind."
+       data-math="A continuous 10×50 m viaduct (w=0 at every pier); the deck shows the quasi-static deflection under the live load set each frame. The ledger accrues fatigue cost via (W/260kN)³. At this scale individual B-WIM gives way to aggregate monitoring (closely-spaced vehicles overlap — see Act-5 note).">
+      Step back. A half-kilometre viaduct on its piers, carrying a full stream of traffic
+      — cars and trucks, dozens on the deck at once. We watch from above like an inspector:
+      counting the trucks, flagging the overloaded, and tallying the wear they leave behind.</p></div>
+  <div class="stagecanvas" style="flex:1;min-height:0"><canvas id="cv5"></canvas></div>
+  <div class="v5stats">
+    <div class="v5stat"><div class="k">on the deck now</div>
+      <div class="v"><span id="cvNow">0</span> <small>vehicles</small></div>
+      <div class="s"><span id="cvLoad">0</span> t of live load</div></div>
+    <div class="v5stat"><div class="k">vehicles passed</div>
+      <div class="v"><span id="cvN">0</span></div>
+      <div class="s"><b id="cvTrucks">0</b> trucks · rest cars</div></div>
+    <div class="v5stat"><div class="k">overloaded caught</div>
+      <div class="v" style="color:var(--hot)"><span id="cvOver">0</span></div>
+      <div class="s">trucks over the legal limit</div></div>
+    <div class="v5stat"><div class="k">bridge life consumed</div>
+      <div class="v" style="color:var(--warn)">€<span id="cvEuro">0.00</span></div>
+      <div class="s">fatigue wear from this traffic</div></div>
+  </div>
+  <div class="v5math">
+    <div class="t">⚙ what's being done — live</div>
+    <div class="grid">
+      <div class="r"><span class="ex">every vehicle presses on the deck; we solve the bridge's deflection</span>
+        <span class="eq">K u = F(t)</span><span class="lv" id="mw1">—</span></div>
+      <div class="r"><span class="ex">the colour is the bending the deck feels — reddest where it works hardest</span>
+        <span class="eq">M = −EI·w″</span><span class="lv" id="mw2">—</span></div>
+      <div class="r"><span class="ex">each truck spends bridge life by the cube of its weight</span>
+        <span class="eq">d ∝ (W/W_ref)³</span><span class="lv" id="mw3">—</span></div>
+      <div class="r"><span class="ex">a continuous viaduct on piers, not one long beam (a multi-span modal forest)</span>
+        <span class="eq">w = 0 at every pier · 10×50 m</span><span class="lv">f₁ = 1.66 Hz</span></div>
+    </div>
+  </div>
+</section>
+
+<script src="../output/explore_data.js"></script>
+<script src="../output/driveby_data.js"></script>
+<script src="../output/bridgebeat_data.js"></script>
+<script src="../output/convoy_data.js"></script>
+<script>
+function fit(cv){ const dpr=Math.min(2,window.devicePixelRatio||1);
+  const w=cv.clientWidth,h=cv.clientHeight; cv.width=w*dpr; cv.height=h*dpr;
+  const c=cv.getContext("2d"); c.setTransform(dpr,0,0,dpr,0,0); return {c,w,h}; }
+const onResizers=[];
+window.addEventListener("resize",()=>onResizers.forEach(f=>f()));
+const lerp=(a,b,t)=>a+(b-a)*t;
+
+/* ---------- mode (Simple / Math) ---------- */
+function applyCaptions(){ const math=document.body.classList.contains("math");
+  document.querySelectorAll("[data-simple]").forEach(el=>{
+    el.innerHTML = math ? el.dataset.math : el.dataset.simple; }); }
+function setMode(math){ document.body.classList.toggle("math",math);
+  document.getElementById("m-math").classList.toggle("on",math);
+  document.getElementById("m-simple").classList.toggle("on",!math);
+  applyCaptions();
+  onResizers.forEach(f=>f()); }            // panels change size → re-fit canvases
+document.getElementById("modesw").onclick=()=>setMode(!document.body.classList.contains("math"));
+if(location.hostname.includes("github.io")) document.getElementById("lablink").style.display="none";
+
+/* ===================== ACT 1 — weigh the truck ===================== */
+(function(){
+  const E=EXPLORE_DATA, cv=document.getElementById("cv1");
+  const L=E.meta.L, nx=E.node_x, trueW=E.meta.weight;
+  const DISP_MAG=420;                          // gentle, believable sag (not a jump-rope)
+  document.getElementById("dispMag").textContent=DISP_MAG;
+  document.getElementById("dataMag").textContent=Math.round(E.meta.mag);
+  document.getElementById("trueT").textContent=(trueW/9810).toFixed(1);
+  let si=2, W=0,H=0,c=null, fidx=0, playing=true, raf=null;
+  const NF=E.scenarios[0].frames.length, DUR=8500;   // ms per crossing
+  const spd=document.getElementById("spd"), scrub=document.getElementById("scrub1"),
+        pp=document.getElementById("pp1");
+  scrub.max=NF-1;
+
+  function geom(){ const r=fit(cv); c=r.c; W=r.w; H=r.h; }
+  onResizers.push(()=>{ geom(); render(); });
+  const PADX=46, baseY=()=>H*0.46, ppm=()=>(W-2*PADX)/L;
+  const Xx=x=>PADX+x*ppm(), Yy=w=>baseY()+w*DISP_MAG*ppm();
+  function interp(w,x){ const p=x/L*(w.length-1), i=Math.max(0,Math.min(w.length-2,Math.floor(p)));
+    return w[i]+(w[i+1]-w[i])*(p-i); }
+  function frameAt(f){ const sc=E.scenarios[si], lo=Math.floor(f),
+    hi=Math.min(sc.frames.length-1,lo+1), t=f-lo, a=sc.frames[lo], b=sc.frames[hi];
+    return { xv:lerp(a.xv,b.xv,t), w:a.w.map((wv,i)=>lerp(wv,b.w[i],t)) }; }
+
+  function drawTruck(x,y){ const s=ppm(); c.save(); c.translate(Xx(x),y);
+    c.fillStyle="#cfd8e6"; c.fillRect(-3.2*s,-2.7*s,5.2*s,1.9*s);
+    c.fillStyle="#e8eef7"; c.fillRect(1.6*s,-3.4*s,1.7*s,2.6*s);
+    c.fillStyle="#1b2740"; [-2.2,-0.6,2.4].forEach(wx=>{ c.beginPath();
+      c.arc(wx*s,-0.55*s,0.5*s,0,7); c.fill(); }); c.restore(); }
+
+  function render(){
+    if(!c) geom(); const fr=frameAt(fidx);
+    c.clearRect(0,0,W,H);
+    c.fillStyle="#33425f";                       // supports
+    [0,L].forEach(xx=>{ c.beginPath(); c.moveTo(Xx(xx)-9,baseY()+16);
+      c.lineTo(Xx(xx)+9,baseY()+16); c.lineTo(Xx(xx),baseY()); c.fill(); });
+    c.strokeStyle="#5b6c87"; c.lineWidth=1; c.setLineDash([2,4]);   // undeformed ref
+    c.beginPath(); c.moveTo(Xx(0),baseY()); c.lineTo(Xx(L),baseY()); c.stroke();
+    c.setLineDash([]);
+    c.strokeStyle="#9fd0ff"; c.lineWidth=3; c.lineJoin="round";     // deflected deck
+    c.shadowBlur=10; c.shadowColor="rgba(120,180,255,.5)"; c.beginPath();
+    fr.w.forEach((w,i)=>{ const X=Xx(nx[i]),Y=Yy(w); i?c.lineTo(X,Y):c.moveTo(X,Y); });
+    c.stroke(); c.shadowBlur=0;
+    const xm=L/2, wm=interp(fr.w,xm);            // gauge at mid-span
+    c.fillStyle="#43e0a0"; c.shadowBlur=14; c.shadowColor="#43e0a0";
+    c.beginPath(); c.arc(Xx(xm),Yy(wm),5,0,7); c.fill(); c.shadowBlur=0;
+    c.fillStyle="#43e0a0"; c.font="11px Segoe UI"; c.fillText("strain gauge",Xx(xm)+9,Yy(wm)+4);
+    drawTruck(fr.xv, Yy(interp(fr.w,fr.xv)));
+    document.getElementById("sagMM").textContent=(Math.abs(wm)*1000).toFixed(2);
+  }
+
+  function setSpeed(){ si=+spd.value; const sc=E.scenarios[si];
+    document.getElementById("spK").textContent=Math.round(sc.speed*3.6);
+    document.getElementById("dafV").textContent=sc.daf.toFixed(3);
+    document.getElementById("peakMM").textContent=sc.peak_mid_mm.toFixed(2);
+    document.getElementById("recT").textContent=(sc.w_rec/9810).toFixed(1);
+    const e=100*(sc.w_rec-trueW)/trueW;
+    const el=document.getElementById("errP"); el.textContent=(e>=0?"+":"")+e.toFixed(1)+"%";
+    el.style.color=Math.abs(e)>8?"#ff5a5a":(Math.abs(e)>3?"#ffb454":"#43e0a0");
+    const m1=document.getElementById("mq1"); if(m1) m1.textContent=(sc.w_rec/1e3).toFixed(0)+" kN";
+    const m1d=document.getElementById("mq1d"); if(m1d) m1d.textContent=sc.daf.toFixed(3);
+    render(); }
+  let last=null;
+  function tick(ts){ if(!playing) return; if(last==null)last=ts; const dt=ts-last; last=ts;
+    fidx+=(NF-1)*dt/DUR; if(fidx>=NF-1){ fidx=0; } scrub.value=Math.round(fidx);
+    render(); raf=requestAnimationFrame(tick); }
+  function play(){ playing=true; pp.textContent="⏸"; last=null; cancelAnimationFrame(raf);
+    raf=requestAnimationFrame(tick); }
+  function pause(){ playing=false; pp.textContent="▶"; cancelAnimationFrame(raf); }
+  pp.onclick=()=>playing?pause():play();
+  scrub.oninput=()=>{ pause(); fidx=+scrub.value; render(); };
+  spd.oninput=setSpeed;
+  spd.value=2; setSpeed();
+  window.__act1start=()=>{ geom(); setSpeed(); play(); };
+  window.__act1render=()=>{ geom(); render(); };
+  window.__act1seek=(frac)=>{ pause(); geom(); fidx=frac*(NF-1); scrub.value=Math.round(fidx); render(); };
+})();
+
+/* ===================== ACT 2 — diagnose damage ===================== */
+(function(){
+  const D=DRIVEBY_DATA, cv=document.getElementById("cv2");
+  const freq=D.spec_freq, fH=D.meta.f_healthy, zone=D.meta.zone, L=D.meta.L;
+  let W=0,H=0,c=null, sev=0;
+  function geom(){ const r=fit(cv); c=r.c; W=r.w; H=r.h; }
+  onResizers.push(()=>{ geom(); render(); });
+  const PADL=58,PADR=20,PADT=20,PADB=64;
+  const fmin=freq[0],fmax=freq[freq.length-1];
+  const Xx=f=>PADL+(W-PADL-PADR)*(f-fmin)/(fmax-fmin);
+  function render(){ if(!c) geom();
+    const sc=D.scenarios[sev], sp=sc.spectrum, smax=Math.max(...sp);
+    const plotB=H-PADB, plotT=PADT, Yy=v=>plotB-(plotB-plotT)*v/smax;
+    c.clearRect(0,0,W,H);
+    const h0=D.scenarios[0].spectrum, h0m=Math.max(...h0);
+    c.strokeStyle="rgba(124,138,160,.45)"; c.lineWidth=1.4; c.setLineDash([4,4]);
+    c.beginPath(); h0.forEach((v,i)=>{const X=Xx(freq[i]),Y=plotB-(plotB-plotT)*v/h0m;
+      i?c.lineTo(X,Y):c.moveTo(X,Y);}); c.stroke(); c.setLineDash([]);
+    const col=sev===0?"#43e0a0":(sev<=2?"#ffb454":"#ff5a5a");
+    c.fillStyle=col+"22"; c.strokeStyle=col; c.lineWidth=2.6; c.shadowBlur=12; c.shadowColor=col;
+    c.beginPath(); c.moveTo(Xx(freq[0]),plotB); sp.forEach((v,i)=>c.lineTo(Xx(freq[i]),Yy(v)));
+    c.lineTo(Xx(freq[freq.length-1]),plotB); c.closePath(); c.fill();
+    c.beginPath(); sp.forEach((v,i)=>{const X=Xx(freq[i]),Y=Yy(v);i?c.lineTo(X,Y):c.moveTo(X,Y);});
+    c.stroke(); c.shadowBlur=0;
+    c.strokeStyle=col; c.setLineDash([3,3]); c.lineWidth=1.5;
+    c.beginPath(); c.moveTo(Xx(sc.f_detected),plotT); c.lineTo(Xx(sc.f_detected),plotB); c.stroke();
+    c.setLineDash([]); c.fillStyle=col; c.font="bold 13px Segoe UI";
+    c.fillText(sc.f_detected.toFixed(2)+" Hz",Xx(sc.f_detected)+6,plotT+14);
+    c.fillStyle="#7c8aa0"; c.font="11px Segoe UI";
+    c.fillText("healthy "+fH.toFixed(2),Xx(fH)-2,plotB+34);
+    c.strokeStyle="rgba(255,255,255,.12)"; c.lineWidth=1;
+    c.beginPath(); c.moveTo(PADL,plotB); c.lineTo(W-PADR,plotB); c.stroke();
+    for(let f=2;f<=5;f++){ c.fillText(f+" Hz",Xx(f)-10,plotB+18); }
+    c.save(); c.translate(16,(plotT+plotB)/2); c.rotate(-Math.PI/2); c.textAlign="center";
+    c.fillText("vibration energy",0,0); c.restore();
+    const by=H-26, bx0=PADL, bx1=W-PADR;          // mini bridge + damage zone
+    c.strokeStyle="#5b6c87"; c.lineWidth=3; c.beginPath(); c.moveTo(bx0,by); c.lineTo(bx1,by); c.stroke();
+    const zx0=bx0+(bx1-bx0)*zone[0]/L, zx1=bx0+(bx1-bx0)*zone[1]/L;
+    if(sev>0){ c.strokeStyle="#ff5a5a"; c.lineWidth=5; c.globalAlpha=.4+sev*0.1;
+      c.beginPath(); c.moveTo(zx0,by); c.lineTo(zx1,by); c.stroke(); c.globalAlpha=1; }
+  }
+  function set(){ sev=+document.getElementById("sev").value; const sc=D.scenarios[sev];
+    document.getElementById("sevV").textContent=Math.round(sc.severity*100);
+    document.getElementById("fV").textContent=sc.f_detected.toFixed(2);
+    document.getElementById("fV2").textContent=sc.f_detected.toFixed(3);
+    document.getElementById("dropV").textContent=sev===0?"normal":(sc.drop_pct.toFixed(1)+"% lower");
+    document.getElementById("dropV2").textContent=sc.drop_pct.toFixed(1)+"%";
+    const vd=document.getElementById("verdict"), vs=document.getElementById("vsub");
+    if(sev===0){ vd.textContent="HEALTHY"; vd.className="verdict ok";
+      vs.textContent="the note is where it should be — nothing to flag."; }
+    else { vd.textContent="DAMAGE DETECTED"; vd.className="verdict bad";
+      vs.innerHTML=`the note dropped <b>${sc.drop_pct.toFixed(1)}%</b> — about `+
+        `${Math.round(sc.severity*100)}% stiffness lost near mid-span.`; }
+    const m2=document.getElementById("mq2"); if(m2) m2.textContent=
+      sc.f_detected.toFixed(2)+" Hz "+(sev===0?"(baseline)":"(−"+sc.drop_pct.toFixed(1)+"%)");
+    render(); }
+  document.getElementById("sev").oninput=set;
+  set();
+  window.__act2render=()=>{ geom(); render(); };
+})();
+
+/* ===================== ACT 3 — real KW51 heartbeat ===================== */
+(function(){
+  const D=BRIDGEBEAT, M=D.meta, cv=document.getElementById("cv3");
+  const n=D.f.length, fmin=Math.min(...D.f), fmax=Math.max(...D.f);
+  const pad=(fmax-fmin)*0.22, yLo=fmin-pad, yHi=fmax+pad;
+  const dates=D.date.map(s=>new Date(s));
+  const t0=dates[0].getTime(), t1=dates[n-1].getTime();
+  const rs=new Date(M.retrofit[0]).getTime(), re=new Date(M.retrofit[1]).getTime();
+  let retroIdx=dates.findIndex(d=>d.getTime()>=re); if(retroIdx<0)retroIdx=n-1;
+  let W=0,H=0,c=null;
+  const PADL=64,PADR=30,PADT=14,PADB=58;
+  const Xx=i=>PADL+(W-PADL-PADR)*(dates[i].getTime()-t0)/(t1-t0);
+  const Yy=f=>(H-PADB)-(H-PADT-PADB)*(f-yLo)/(yHi-yLo);
+  function tcol(T,a=1){ if(T==null||isNaN(T))return`rgba(150,160,175,${a})`;
+    const u=Math.max(0,Math.min(1,(T-M.T_min)/(M.T_max-M.T_min))); return`hsla(${210-210*u},85%,60%,${a})`; }
+  document.getElementById("tlo").textContent=M.T_min+"°";
+  document.getElementById("thi").textContent=M.T_max+"°";
+  document.getElementById("revealSmall").innerHTML=
+    `The frequency stepped up <b>${M.jump_pct}%</b> (${M.f_before_hz} → ${M.f_after_hz} Hz) `+
+    `after the Sep 2019 retrofit — <b>no new sensors that day</b>, just listening to how it shook.`;
+  function geom(){ const r=fit(cv); c=r.c; W=r.w; H=r.h; }
+  onResizers.push(()=>{ geom(); draw(frame); });
+  function grid(){ c.clearRect(0,0,W,H);
+    const xb=Xx(dates.findIndex(d=>d.getTime()>=rs)), xe=Xx(retroIdx);
+    c.fillStyle="rgba(67,224,160,.07)"; c.fillRect(xb,PADT,xe-xb,H-PADT-PADB);
+    c.strokeStyle="rgba(67,224,160,.35)"; c.setLineDash([4,4]); c.lineWidth=1;
+    c.beginPath(); c.moveTo(xe,PADT); c.lineTo(xe,H-PADB); c.stroke(); c.setLineDash([]);
+    c.fillStyle="rgba(67,224,160,.8)"; c.font="12px Segoe UI"; c.fillText("retrofit",xb+6,PADT+14);
+    c.font="11px Segoe UI"; let d=new Date(dates[0]); d.setDate(1);
+    while(d.getTime()<=t1){ if(d.getTime()>=t0){ const x=Xx(0)+(W-PADL-PADR)*(d.getTime()-t0)/(t1-t0);
+      c.strokeStyle="rgba(255,255,255,.05)"; c.beginPath(); c.moveTo(x,PADT); c.lineTo(x,H-PADB); c.stroke();
+      if(d.getMonth()%2===0){ c.fillStyle="#7c8aa0";
+        c.fillText(d.toLocaleString('en',{month:'short'})+" '"+(""+d.getFullYear()).slice(2),x+4,H-PADB+16);} }
+      d.setMonth(d.getMonth()+1); }
+    c.save(); c.translate(18,(PADT+H-PADB)/2); c.rotate(-Math.PI/2);
+    c.fillStyle="#7c8aa0"; c.textAlign="center"; c.fillText("natural frequency (Hz)",0,0); c.restore();
+  }
+  function draw(upto){ if(!c) geom(); grid(); c.lineWidth=2.4; c.lineJoin="round"; c.shadowBlur=12;
+    for(let i=1;i<=upto&&i<n;i++){ c.strokeStyle=tcol(D.T[i],.95); c.shadowColor=tcol(D.T[i],.7);
+      c.beginPath(); c.moveTo(Xx(i-1),Yy(D.f[i-1])); c.lineTo(Xx(i),Yy(D.f[i])); c.stroke(); }
+    c.shadowBlur=0;
+    if(upto>0&&upto<n){ const i=Math.min(upto,n-1); c.fillStyle="#fff"; c.shadowBlur=18;
+      c.shadowColor=tcol(D.T[i],1); c.beginPath(); c.arc(Xx(i),Yy(D.f[i]),4.5,0,7); c.fill(); c.shadowBlur=0; }
+    if(upto>=n-1){ const yb=Yy(M.f_before_hz),ya=Yy(M.f_after_hz);
+      c.setLineDash([6,5]); c.lineWidth=1.4; c.strokeStyle="rgba(124,138,160,.7)";
+      c.beginPath(); c.moveTo(PADL,yb); c.lineTo(Xx(retroIdx),yb); c.stroke();
+      c.strokeStyle="rgba(67,224,160,.9)"; c.beginPath(); c.moveTo(Xx(retroIdx),ya); c.lineTo(W-PADR,ya); c.stroke();
+      c.setLineDash([]); c.fillStyle="#7c8aa0"; c.font="12px Segoe UI";
+      c.fillText("before "+M.f_before_hz+" Hz",PADL+6,yb-7);
+      c.fillStyle="#43e0a0"; c.fillText("after "+M.f_after_hz+" Hz ("+(M.jump_pct>0?"+":"")+M.jump_pct+"%)",Xx(retroIdx)+10,ya-7); }
+  }
+  function setRO(i){ document.getElementById("roDate").textContent=
+      dates[i].toLocaleDateString('en',{day:'numeric',month:'short',year:'numeric'});
+    document.getElementById("roF").textContent=D.f[i].toFixed(3); }
+  let frame=0,raf=null,revealed=false,last=null; const DUR=9000;
+  function fire(){ if(revealed)return; revealed=true; document.getElementById("reveal").classList.add("show"); }
+  function tick(ts){ if(last==null)last=ts; const dt=ts-last; last=ts;
+    frame+=(n-1)*dt/DUR;
+    if(frame>=n-1){ frame=n-1; draw(frame); setRO(Math.round(frame)); fire(); return; }
+    draw(frame); setRO(Math.round(frame)); raf=requestAnimationFrame(tick); }
+  function start(){ cancelAnimationFrame(raf); geom(); frame=0; revealed=false; last=null;
+    document.getElementById("reveal").classList.remove("show"); raf=requestAnimationFrame(tick); }
+  function instant(){ geom(); frame=n-1; draw(frame); setRO(n-1); fire(); }
+  document.getElementById("rep3").onclick=start;
+  window.__act3start=start; window.__act3instant=instant;
+})();
+
+/* ===================== ACT 5 — 500 m viaduct monitor (stress heat-map) ============= */
+(function(){
+  const C=(typeof CONVOY!=='undefined')?CONVOY:null; if(!C) return;
+  const cv=document.getElementById("cv5"), L=C.meta.L, nx=C.meta.node_x,
+        MAG=130, MMAX=C.meta.m_max, veh=C.vehicles, F=C.frames, piers=C.meta.piers;
+  let W=0,H=0,c=null, fi=0, last=null, raf=null; const DUR=18000, NF=F.length;
+  const TOTAL=F[NF-1].t;
+  function geom(){ const r=fit(cv); c=r.c; W=r.w; H=r.h; }
+  onResizers.push(()=>{ geom(); render(); });
+  const PADX=30, baseY=()=>H*0.30, ppm=()=>(W-2*PADX)/L, DECK=()=>Math.max(7,H*0.033), PIER=()=>H*0.92;
+  const Xx=x=>PADX+x*ppm(), Yy=w=>baseY()+w*MAG*ppm();
+  function interp(a,x){ const p=x/L*(a.length-1), i=Math.max(0,Math.min(a.length-2,Math.floor(p)));
+    return a[i]+(a[i+1]-a[i])*(p-i); }
+  function lerpFrame(f){ const lo=Math.floor(f),hi=Math.min(NF-1,lo+1),t=f-lo,a=F[lo],b=F[hi];
+    return { t:lerp(a.t,b.t,t), w:a.w.map((v,i)=>lerp(v,b.w[i],t)),
+      m:a.m.map((v,i)=>lerp(v,b.m[i],t)),
+      x:a.x.map((xv,i)=>{ const bx=b.x[i]; if(xv==null&&bx==null)return null;
+        if(xv==null)return bx; if(bx==null)return xv; return lerp(xv,bx,t); }) }; }
+  function heat(u){ u=Math.max(0,Math.min(1,Math.pow(u,0.7))); // gamma for punch
+    return `hsl(${(205-205*u).toFixed(0)},88%,${(40+22*u).toFixed(0)}%)`; }
+  function clock(t){ const mins=16*60 + Math.round(t/TOTAL*42);  // ~40 min slice (real throughput)
+    return ("0"+Math.floor(mins/60)).slice(-2)+":"+("0"+(mins%60)).slice(-2); }
+  function vehGlyph(x,y,v){ const s=ppm(), X=Xx(x), d=DECK();
+    if(v.truck){ const ov=v.overload, len=(v.cls==="5-axle semi"?9:5)*s;
+      c.fillStyle=ov?"#ff5a5a":"#cdd7e6"; c.fillRect(X-len, y-d/2-4.5, Math.max(7,len), 4.5);
+      c.fillStyle=ov?"#ff9a9a":"#fff"; c.fillRect(X-2, y-d/2-6.2, 2.6, 6.2);
+    } else { c.fillStyle="#8493a8"; const w=Math.max(3,2.6*s); c.fillRect(X-w, y-d/2-2.6, w, 2.6); } }
+  function render(){ if(!c) geom(); const fr=lerpFrame(fi), d=DECK();
+    c.clearRect(0,0,W,H);
+    // piers
+    c.fillStyle="#1c2738";
+    piers.forEach(px=>{ const X=Xx(px); c.beginPath(); c.moveTo(X-4,baseY()+d/2);
+      c.lineTo(X+4,baseY()+d/2); c.lineTo(X+7,PIER()); c.lineTo(X-7,PIER()); c.fill(); });
+    // deck: one smooth band, coloured by |bending moment| via an x-gradient (no segment ticks)
+    const grad=c.createLinearGradient(Xx(0),0,Xx(L),0);
+    for(let i=0;i<nx.length;i++){ grad.addColorStop(Math.max(0,Math.min(1,nx[i]/L)),
+      heat(Math.abs(fr.m[i])/MMAX)); }
+    c.strokeStyle=grad; c.lineWidth=d; c.lineJoin="round"; c.lineCap="round";
+    c.shadowBlur=7; c.shadowColor="rgba(120,180,255,.25)";
+    c.beginPath(); fr.w.forEach((w,i)=>{ const X=Xx(nx[i]),Y=Yy(w); i?c.lineTo(X,Y):c.moveTo(X,Y); });
+    c.stroke(); c.shadowBlur=0;
+    // vehicles
+    let load=0;
+    fr.x.forEach((x,k)=>{ if(x==null)return; vehGlyph(x, Yy(interp(fr.w,x)), veh[k]); load+=veh[k].gvw; });
+    // clock (rush hour, accelerated)
+    c.textAlign="center"; c.fillStyle="#e8eef7"; c.font="600 30px Segoe UI";
+    c.fillText(clock(fr.t), W/2, 38);
+    c.fillStyle="#7c8aa0"; c.font="11px Segoe UI"; c.fillText("AFTERNOON PEAK · live", W/2, 56);
+    c.textAlign="left";
+    // colour legend (top-left, under the clock band)
+    const lx=PADX, ly=26, lw=150; for(let i=0;i<lw;i++){ c.fillStyle=heat(i/lw);
+      c.fillRect(lx+i, ly, 1, 7); }
+    c.fillStyle="#7c8aa0"; c.font="10px Segoe UI"; c.fillText("deck bending: low → high", lx, ly-4);
+    // ledger
+    const tnow=fr.t; let passed=0,trucks=0,over=0,euro=0,onNow=0;
+    fr.x.forEach(x=>{ if(x!=null) onNow++; });
+    veh.forEach(v=>{ if(tnow>=v.exit){ passed++; if(v.truck){trucks++; euro+=v.euro;} if(v.overload)over++; } });
+    document.getElementById("cvNow").textContent=onNow;
+    document.getElementById("cvLoad").textContent=(load/9.81).toFixed(0);
+    document.getElementById("cvN").textContent=passed;
+    document.getElementById("cvTrucks").textContent=trucks;
+    document.getElementById("cvOver").textContent=over;
+    document.getElementById("cvEuro").textContent=euro.toFixed(2);
+    // live "what's being done" values
+    const pk=Math.max.apply(null, fr.m.map(Math.abs))/1e6, g=id=>document.getElementById(id);
+    if(g("mw1")) g("mw1").textContent=onNow+" loads · "+(load/9.81).toFixed(0)+" t";
+    if(g("mw2")) g("mw2").textContent=pk.toFixed(1)+" MN·m";
+    if(g("mw3")) g("mw3").textContent="€"+euro.toFixed(2);
+  }
+  function tick(ts){ if(last==null)last=ts; fi+=(NF-1)*(ts-last)/DUR; last=ts;
+    if(fi>=NF-1){ fi=0; } render(); raf=requestAnimationFrame(tick); }
+  function start(){ cancelAnimationFrame(raf); geom(); fi=0; last=null; raf=requestAnimationFrame(tick); }
+  function seek(frac){ cancelAnimationFrame(raf); geom(); fi=frac*(NF-1); render(); }
+  window.__act5start=start; window.__act5seek=seek;
+  window.__act5final=()=>seek(0.72);
+})();
+
+/* ---------- count-up for Act 4 ---------- */
+function countUp(instant){ document.querySelectorAll("#act4 [data-count]").forEach(el=>{
+  const tgt=+el.dataset.count, suf=el.dataset.suf||"";
+  if(instant){ el.textContent=tgt+suf; return; } let v=0;
+  const step=()=>{ v+=tgt/28; if(v>=tgt){ el.textContent=tgt+suf; return; }
+    el.textContent=Math.round(v)+suf; requestAnimationFrame(step); }; step(); }); }
+
+/* ---------- start each act when it scrolls into view ---------- */
+let counted=false;
+const io=new IntersectionObserver((es)=>es.forEach(e=>{ if(!e.isIntersecting)return;
+  if(document.body.dataset.shot)return;        // screenshot mode controls acts manually
+  if(e.target.id==="act1"&&window.__act1start)window.__act1start();
+  if(e.target.id==="act3"&&window.__act3start)window.__act3start();
+  if(e.target.id==="act4"&&!counted){ counted=true; countUp(); }
+  if(e.target.id==="act5"&&window.__act5start)window.__act5start(); }),{threshold:.5});
+["act1","act3","act4","act5"].forEach(id=>io.observe(document.getElementById(id)));
+
+applyCaptions();
+
+/* ---------- screenshot / deep-link helpers ---------- */
+const params=new URLSearchParams(location.search);
+if(params.get("mode")==="math") setMode(true);
+if(location.hash.includes("instant")){ document.getElementById("act3").scrollIntoView();
+  setTimeout(()=>window.__act3instant&&window.__act3instant(),60); }
+const qa=params.get("act");
+if(qa){ document.body.dataset.shot="1"; document.body.style.scrollSnapType="none";
+  ["act0","act1","act2","act3","act4","act5"].forEach(id=>{ if(id!=="act"+qa) document.getElementById(id).style.display="none"; });
+  window.dispatchEvent(new Event("resize"));
+  if(qa==="1") setTimeout(()=>window.__act1seek&&window.__act1seek(0.5),60);
+  if(qa==="2") setTimeout(()=>window.__act2render&&window.__act2render(),50);
+  if(qa==="3") setTimeout(()=>window.__act3instant&&window.__act3instant(),60);
+  if(qa==="4"){ counted=true; setTimeout(()=>countUp(true),40); }
+  if(qa==="5") setTimeout(()=>window.__act5final&&window.__act5final(),50); }
+</script>
+</body>
+</html>

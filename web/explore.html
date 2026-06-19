@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Vehicle–Bridge Interaction explorer</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>Vehicle–Bridge Interaction — interactive explorer</h1>
+    <p class="sub">A truck crosses a realistic <strong>40 m</strong> simply-supported
+      overpass (Rayleigh damping <strong id="zetaLabel">—</strong>). Change the
+      speed and watch the dynamic response. Deflection magnified
+      <strong id="magLabel">—</strong> (real is millimetric).</p>
+  </header>
+
+  <section id="scene-wrap">
+    <svg id="scene" viewBox="0 0 900 340" preserveAspectRatio="xMidYMid meet"></svg>
+  </section>
+
+  <section id="controls">
+    <button id="playBtn">⏸ Pause</button>
+    <label>vehicle speed
+      <input id="speed" type="range" min="0" max="7" step="1" value="2" />
+      <span id="speedLabel" class="hi">—</span>
+    </label>
+  </section>
+
+  <section id="panels">
+    <div class="readout" id="readout"></div>
+    <div class="plots">
+      <figure>
+        <figcaption>Dynamic amplification factor (DAF) vs speed — the marker is
+          your current speed. <span class="hint">DAF = peak dynamic deflection ÷
+          static deflection; &gt;1 means motion overshoots the static dip.</span></figcaption>
+        <svg id="dafPlot" viewBox="0 0 560 210"></svg>
+      </figure>
+    </div>
+  </section>
+
+  <footer>
+    <p><strong>What you are seeing:</strong> the bridge is an Euler–Bernoulli beam
+      (FEM); the truck is a quarter-car coupled through the contact force; the
+      system is marched in time with RK4 including 2% structural damping. The
+      <em>B-WIM</em> readout recovers the axle weight from the bridge's bending
+      response — weighing the truck from the bridge.</p>
+    <p class="limit"><strong>Honest note:</strong> a real 40 m bridge is very stiff,
+      so DAF stays near 1 at traffic speeds (its resonant/critical speed is far
+      above any legal limit). Verified against the Frýba closed form and analytical
+      references.</p>
+  </footer>
+
+  <script src="../output/explore_data.js"></script>
+  <script src="explore.js"></script>
+</body>
+</html>

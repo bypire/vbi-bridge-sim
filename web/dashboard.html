@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BridgeTwin — live weigh-in-motion monitor</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="dash">
+  <header class="dash-head">
+    <div>
+      <h1>BridgeTwin <span class="tag">live monitor</span></h1>
+      <p class="sub">Bridge <strong id="bridgeId">—</strong> · every passing
+        truck weighed from the bridge's own response (B-WIM). No weigh station.</p>
+    </div>
+    <div class="status" id="statusPill">● LIVE</div>
+  </header>
+
+  <section class="kpis" id="kpis"></section>
+
+  <section class="dash-grid">
+    <div class="card twin">
+      <div class="card-title">Live digital twin <span class="hint">deflection magnified</span></div>
+      <svg id="twin" viewBox="0 0 560 240" preserveAspectRatio="xMidYMid meet"></svg>
+      <div id="nowReading" class="now"></div>
+    </div>
+    <div class="card feed">
+      <div class="card-title">Weighing feed</div>
+      <div id="feed" class="feed-list"></div>
+    </div>
+  </section>
+
+  <section class="dash-grid">
+    <div class="card">
+      <div class="card-title">Gross-weight distribution
+        <span class="hint">(× legal limit; red = overloaded)</span></div>
+      <svg id="hist" viewBox="0 0 560 220"></svg>
+    </div>
+    <div class="card">
+      <div class="card-title">B-WIM accuracy <span class="hint">recovered vs true GVW</span></div>
+      <svg id="scatter" viewBox="0 0 560 220"></svg>
+    </div>
+  </section>
+
+  <footer>
+    <p><strong>Engine:</strong> Euler–Bernoulli beam FEM + moving multi-axle loads;
+      each truck's gross weight is recovered by Moses' B-WIM least squares from the
+      (noisy) bending-moment signal. Road damage grows with ~the 4th power of axle
+      load, so catching overloads is high-value. Detection is imperfect near the
+      limit — that uncertainty is shown, not hidden.</p>
+  </footer>
+
+  <script src="../output/traffic_data.js"></script>
+  <script src="dashboard.js"></script>
+</body>
+</html>

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Drive-by bridge inspection — VBI simulator</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>Turn any car into a bridge inspector</h1>
+    <p class="sub">A passing vehicle's vibration reveals the bridge's natural
+      frequency. Damage the deck and the frequency drops — detected from the car,
+      no sensors on the bridge. Deflection magnified <strong id="magLabel">—</strong>.</p>
+  </header>
+
+  <section id="scene-wrap">
+    <svg id="scene" viewBox="0 0 900 360" preserveAspectRatio="xMidYMid meet"></svg>
+  </section>
+
+  <section id="controls">
+    <button id="playBtn">⏸ Pause</button>
+    <label>damage severity
+      <input id="sev" type="range" min="0" max="5" step="1" value="0" />
+      <span id="sevLabel" class="hi">0%</span>
+    </label>
+  </section>
+
+  <section id="panels">
+    <div class="readout" id="health"></div>
+    <div class="plots">
+      <figure>
+        <figcaption>Contact-point acceleration spectrum — the bridge peak shifts
+          left as damage grows</figcaption>
+        <svg id="spectrum" viewBox="0 0 560 240"></svg>
+      </figure>
+    </div>
+  </section>
+
+  <footer>
+    <p><strong>How:</strong> a quarter-car crosses at a slow scanning speed; we
+      reconstruct the tyre contact-point response from its accelerations (Yang
+      2020), and read the bridge's first natural frequency from the spectrum. A
+      local stiffness loss (EI) over the deck's centre lowers that frequency.</p>
+    <p class="limit"><strong>Honest scope:</strong> smooth road shown here — this
+      is the clean regime. Real road roughness buries the peak and needs
+      two-axle / residual techniques; frequency is also a blunt, global damage
+      indicator (small local damage barely shifts it). Verified end-to-end against
+      FEM ground truth.</p>
+  </footer>
+
+  <script src="../output/driveby_data.js"></script>
+  <script src="driveby.js"></script>
+</body>
+</html>
