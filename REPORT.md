@@ -2,7 +2,7 @@
 
 **Extended abstract**
 *B.Sc. Computational Engineering Science (CES), RWTH Aachen*
-*Live demo: https://bypire.github.io/bridgebeat · Source: github.com/bypire/vbi-bridge-sim (private, access on request)*
+*Live demo: https://bypire.github.io/bridgebeat · Source: github.com/bypire/vbi-bridge-sim*
 
 ---
 
@@ -12,7 +12,7 @@ Road and bridge damage grows with roughly the **fourth power of axle load** (AAS
 Road Test): a truck at twice the legal axle weight does about **16×** the structural
 damage. **Bridge Weigh-in-Motion (B-WIM)** turns an already-instrumented bridge into
 a scale that weighs trucks *at traffic speed* by inverting the measured structural
-response — cheaper and harder to evade than static weigh stations. The same dynamic
+response, cheaper and harder to evade than static weigh stations. The same dynamic
 response also carries information about the structure's *health* (drive-by /
 vibration-based monitoring). This project builds the **forward** physics (a vehicle
 crossing a bridge), runs it **backwards** to recover the axle weights as an inverse
@@ -55,14 +55,14 @@ answer is trustworthy."
 
 **4.1 Model-error-aware uncertainty.** Casting B-WIM as a linear-Gaussian inverse
 gives a recovered weight with a 95 % credible interval. A *self-consistent* coverage
-test (forward and inverse both use the static influence line) returns 95.3 % coverage
-— but this only verifies the linear-Gaussian machinery. The honest test replaces the
+test (forward and inverse both use the static influence line) returns 95.3 % coverage,
+but this only verifies the linear-Gaussian machinery. The honest test replaces the
 forward model with the **full coupled dynamic FEM**: the recovered weight is then
 biased by dynamic amplification (**+0.3 % quasi-static rising to +5 % at 40 m/s**),
 and because the residual σ measures goodness-of-*fit* (the signal still looks
 influence-line-shaped) rather than the dynamic *scale* error, the nominal-95 %
 interval's true coverage **collapses to ≈ 0 %**. The RMS dynamic bias over the highway
-band (**≈ 3.1 %**) is the model-error term that restores calibration — and it matches
+band (**≈ 3.1 %**) is the model-error term that restores calibration, and it matches
 the value independently used in the operational dashboard, so that uncertainty is now
 *calibrated from physics*, not assumed.
 
@@ -72,25 +72,25 @@ linear-algebraic: a tandem makes two columns of the influence matrix nearly para
 so `cond(CᵀC)` rises sharply (≈ 9 at 8 m spacing → ≈ 2000 at 0.5 m) and the split
 amplifies noise. **Tikhonov regularization** with an **L-curve**-chosen weight cuts the
 per-axle scatter **≈ 6×** (16 % → 2.6 %) for a small bias, while leaving the well-posed
-gross weight unchanged — the bias–variance trade-off made explicit.
+gross weight unchanged, the bias–variance trade-off made explicit.
 
 **4.3 Validation against real data (KW51).** The 16-month tracked-modal-frequency
 record of the instrumented KW51 railway bridge (Leuven; public dataset) is ground
-truth no model can argue with. It confirms the drive-by-SHM premise — a real,
-dated **retrofit** (stiffening) shifts the modal frequencies by up to **+2.6 %** — and
+truth no model can argue with. It confirms the drive-by-SHM premise, a real,
+dated **retrofit** (stiffening) shifts the modal frequencies by up to **+2.6 %**, and
 exposes its dominant confounder: **temperature** swings the same frequencies by a
 comparable amount (**up to ≈ 3.8 %**, with some modes' temperature swing *exceeding*
 the retrofit jump). Removing the temperature trend (fit on the healthy period) sharpens
 the change from a raw to a temperature-corrected residual (e.g. **9.8 σ → 17.3 σ** for
-one mode). This is exactly the limit the synthetic damage study predicted — frequency
-is a blunt, environment-contaminated indicator — now confirmed in the field.
+one mode). This is exactly the limit the synthetic damage study predicted: frequency
+is a blunt, environment-contaminated indicator, now confirmed in the field.
 
 **4.4 From weight to decision (fatigue economics).** A recovered weight is only useful
 if it drives a decision. Steel-detail fatigue follows an S-N law with slope *m* (Eurocode
 EN 1993-1-9, *m* = 3; AASHTO pavement *m* = 4), so damage per pass scales as
 `(W/W_ref)ᵐ`: a **2× overload does 8×–16×** the damage (exact). Over a simulated traffic
-stream this concentrates sharply — the heaviest **10 %** of trucks cause **≈ 45 %** of the
-fatigue damage and the overloaded minority **≈ half** — and B-WIM identifies exactly those
+stream this concentrates sharply: the heaviest **10 %** of trucks cause **≈ 45 %** of the
+fatigue damage and the overloaded minority **≈ half**, and B-WIM identifies exactly those
 trucks. An asset-depreciation estimate puts one heavy crossing at **≈ €10** of bridge life
 (vs €0.80 for a legal pass): the quantified case for self-funding overload enforcement.
 
@@ -98,7 +98,7 @@ trucks. An asset-depreciation estimate puts one heavy crossing at **≈ €10** 
 
 One simply-supported single span; linear, small-displacement Euler–Bernoulli theory.
 A single quarter-car (one wheel path); the multi-axle B-WIM uses constant axle forces.
-The drive-by study **detects** a global stiffness change but does **not localize** it —
+The drive-by study **detects** a global stiffness change but does **not localize** it;
 a single fundamental frequency cannot, by construction. KW51 is a 115 m steel bowstring
 **arch**, not a simply-supported beam, so it validates the SHM *behaviour and method*,
 not the FEM geometry. B-WIM uses the analytical influence line; field systems calibrate
@@ -107,9 +107,9 @@ it from a known truck and lose accuracy to roughness, multiple vehicles, and tem
 ## 6. References
 
 1. Fourth power law / AASHO Road Test; Equivalent Single Axle Load (80 kN ESAL).
-2. L. Frýba, *Vibration of Solids and Structures under Moving Loads* — moving-load closed form.
+2. L. Frýba, *Vibration of Solids and Structures under Moving Loads*, moving-load closed form.
 3. F. Moses, "Weigh-in-motion system using instrumented bridges," *J. Transp. Eng.*, 1979.
 4. OBrien et al., "A regularised solution to the bridge weigh-in-motion equations."
 5. P.C. Hansen, "The L-curve and its use in the numerical treatment of inverse problems."
 6. Maes & Lombaert, "Monitoring data for railway bridge KW51," Zenodo 3745914 (2020).
-7. COST323, *European Specification on Weigh-in-Motion* — accuracy classes.
+7. COST323, *European Specification on Weigh-in-Motion*, accuracy classes.
