@@ -1,0 +1,49 @@
+{
+  "accuracy_20m": {
+    "static_midspan_m": 0.003968253968253968,
+    "daf_fryba": 1.141743629998821,
+    "rel_err_rk4_vs_fryba": 5.597559789480472e-06,
+    "rel_err_newmark_vs_fryba": 0.00023834375213798936,
+    "rel_err_modal_vs_fryba": {
+      "1": 0.011530750589376516,
+      "2": 0.011519739112422432,
+      "3": 0.0015666625134535554,
+      "5": 0.0003758378704399308,
+      "10": 1.8175627917092292e-05
+    }
+  },
+  "newmark_convergence": {
+    "4e-03": 0.0008385443229101102,
+    "2e-03": 0.0004797762816518252,
+    "1e-03": 0.00023834375213798936,
+    "5e-04": 2.9304140384142017e-05
+  },
+  "modal_reduction_20m": {
+    "n_free_dofs": 40,
+    "omega_max_full_radps": 72746.13391789279,
+    "omega_3_radps": 321.81530119331103,
+    "dof_reduction": 13.333333333333334,
+    "undamped_step_gain": 226.04933217328582,
+    "damped_step_gain": 51098.30057598851
+  },
+  "stability_40m": {
+    "f1_hz": 2.597461373388801,
+    "omega_max_radps": 33203.915431768,
+    "rayleigh_beta": 0.0004901836529225464,
+    "zeta": 0.02,
+    "dt_undamped_cap_s": 5.4210474174315045e-05,
+    "dt_damped_cap_s": 4.0708514874179415e-06,
+    "explicit_slowdown_factor": 13.316740819916191,
+    "rk4_dt_s": 4.070851487417955e-06,
+    "newmark_dt_s": 0.004,
+    "newmark_over_rk4_step": 982.5954133583747,
+    "rk4_steps": 393039,
+    "newmark_steps": 400,
+    "step_count_ratio": 982.5975,
+    "daf_rk4": 1.079946647024813,
+    "daf_newmark": 1.0800199368640104,
+    "daf_rel_diff": 6.786431477835522e-05,
+    "rk4_wall_s": 33.47110199928284,
+    "crossing_time_s": 1.6
+  }
+}
