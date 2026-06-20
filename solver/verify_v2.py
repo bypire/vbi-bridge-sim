@@ -103,6 +103,7 @@ def main():
     print(f"    RMS rel. error (hist) = {rms_rel:.2e}")
     print(f"    DAF  FEM={res.daf:.4f}   Frýba={daf_fry:.4f}   "
           f"(rel. err {abs(res.daf - daf_fry) / daf_fry:.2e})")
+    assert peak_rel < 1e-3, "moving-force peak deflection must match the Fryba closed form"
 
     # --- DAF vs speed sweep ------------------------------------------------
     print("\n[2] DAF vs SPEED  (FEM vs Frýba)")

@@ -1,5 +1,7 @@
 # Vehicle-Bridge Interaction and Bridge Weigh-in-Motion
 
+[![verify](https://github.com/bypire/vbi-bridge-sim/actions/workflows/verify.yml/badge.svg)](https://github.com/bypire/vbi-bridge-sim/actions/workflows/verify.yml)
+
 A two-dimensional simulator that computes the dynamic response of a bridge as a vehicle crosses
 it, and then inverts that response to recover the vehicle's axle weights. The inverse direction is
 the principle behind Bridge Weigh-in-Motion (B-WIM). Every result is checked against a reference

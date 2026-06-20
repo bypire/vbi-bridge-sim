@@ -52,6 +52,7 @@ def main() -> None:
     print(f"    FEM        = {w_mid_fem:.6e} m")
     print(f"    analytical = {w_mid_exact:.6e} m   (P L^3 / 48 E I)")
     print(f"    rel. error = {rel:.2e}")
+    assert rel < 1e-6, "static mid-span deflection must match P L^3 / 48 E I"
 
     # --- Check 2: natural frequencies ---------------------------------------
     f_fem = natural_frequencies(beam, n_modes=5)
@@ -62,6 +63,9 @@ def main() -> None:
         rel_n = abs(f_fem[n] - f_exact[n]) / f_exact[n]
         print(f"    {n + 1:>4}  {f_fem[n]:>12.4f}  {f_exact[n]:>12.4f}  "
               f"{rel_n:>10.2e}")
+
+    assert abs(f_fem[0] - f_exact[0]) / f_exact[0] < 1e-3, \
+        "fundamental frequency must match (n pi / L)^2 sqrt(EI / m_bar)"
 
     print("\n(Higher modes drift more - expected: a 20-element mesh resolves "
           "low modes best. V2 adds the moving load + Fryba check.)")

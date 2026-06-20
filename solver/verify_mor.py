@@ -47,6 +47,9 @@ def main():
         print(f"    {r:>3} {pk:>13.6e} {abs(pk-peak_fry)/abs(peak_fry):>10.2e} "
               f"{rm.daf:>8.4f}")
     print(f"    (full {nf}-DOF / Frýba DAF = {full.daf:.4f}; ~3 modes already match)")
+    pk3 = res[3].w_mid[np.argmax(np.abs(res[3].w_mid))]
+    assert abs(pk3 - peak_fry) / abs(peak_fry) < 5e-3, \
+        "3-mode reduced model must reproduce the full/Fryba peak"
 
     # --- [2] speed-up ------------------------------------------------------
     om_full = 2 * np.pi * natural_frequencies(beam, nf)[-1]    # full omega_max

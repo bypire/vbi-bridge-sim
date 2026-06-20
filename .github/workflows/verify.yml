@@ -1,0 +1,21 @@
+name: verify
+
+on: [push, pull_request]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    env:
+      MPLBACKEND: Agg
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install numpy scipy matplotlib
+      - name: Static deflection and natural frequencies
+        run: python solver/verify.py
+      - name: Moving force vs the Fryba closed form
+        run: python solver/verify_v2.py
+      - name: Model order reduction vs full order
+        run: python solver/verify_mor.py
