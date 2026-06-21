@@ -4,7 +4,7 @@
 
 A two-dimensional simulator that computes the dynamic response of a bridge as a vehicle crosses
 it, and then inverts that response to recover the vehicle's axle weights. The inverse direction is
-the principle behind Bridge Weigh-in-Motion (B-WIM). Every result is checked against a reference
+the principle behind Bridge Weigh-in-Motion (B-WIM). Each result is checked against a reference
 that ships with the code: an analytical solution, a published benchmark, or a simulate-then-recover
 round trip. The numerical core depends only on NumPy.
 
@@ -72,8 +72,7 @@ measured data. The two are kept separate.
   amplification (about +0.3 percent quasi-static, rising to +5 percent at 40 m/s). Because the fit
   residual measures goodness of fit rather than the dynamic scale error, the nominal 95 percent
   interval's true coverage collapses toward zero. The RMS dynamic bias over the highway speed band,
-  about 3.1 percent, is the model-error term that restores calibration, and it is derived from the
-  physics rather than assumed.
+  about 3.1 percent, is the model-error term that restores calibration.
 - **Regularisation of the ill-posed axle split** (`verify_regularize.py`). A closely spaced
   (tandem) axle pair makes two columns of the influence matrix nearly parallel, so the condition
   number of `C^T C` rises from about 9 at 8 m spacing to about 2000 at 0.5 m, and Moses' split
@@ -106,8 +105,7 @@ so damage per pass scales as `(W / W_ref)^m`. A 2x overload therefore does 8 to 
 damage. Over a simulated traffic stream the damage concentrates sharply: the heaviest 10 percent of
 trucks cause about 45 percent of the fatigue damage, and the overloaded minority about half, and
 B-WIM identifies exactly those trucks. As an asset-depreciation estimate, one heavy crossing
-consumes about 10 EUR of bridge life against about 0.80 EUR for a legal pass, which is the
-quantified case for self-funding overload enforcement.
+consumes about 10 EUR of bridge life against about 0.80 EUR for a legal pass.
 
 ## Interactive demonstration
 

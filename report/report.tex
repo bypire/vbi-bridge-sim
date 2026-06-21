@@ -63,10 +63,9 @@
   \parbox{\dimexpr\textwidth-2\fboxsep\relax}{%
   \vspace{3pt}\textbf{Aim.} Build the forward physics of a vehicle crossing a bridge, then run
   it backwards to recover the truck's axle weights (Bridge Weigh-in-Motion), and treat that
-  recovery with the discipline an inverse problem needs: analytical verification of every
+  recovery as an inverse problem: analytical verification of every
   forward block, regularization of the ill-posed part, an uncertainty estimate calibrated from
-  model error rather than assumed, and validation against real measured bridge data. The goal is
-  a B-WIM pipeline in which every number is checked against a reference. The core is
+  model error rather than assumed, and validation against real measured bridge data. The core is
   numpy-only.\vspace{3pt}}}
 
 \vspace{1.0em}
@@ -78,11 +77,10 @@ that trace predicts the bridge's vibration; read backwards, it recovers the axle
 second reading is Bridge Weigh-in-Motion (B-WIM), an inverse problem that turns an instrumented
 bridge into a traffic-speed scale. This report builds the forward physics (an Euler--Bernoulli
 beam under a moving, coupled vehicle load), inverts it for the axle loads, and treats the result
-the way an inverse problem requires: verification of every forward block against an analytical
+as an inverse problem: verification of every forward block against an analytical
 reference, regularization of the ill-conditioned tandem-axle split, an uncertainty estimate that
 is shown to be badly over-confident on a dynamic bridge and is then re-calibrated from physics,
-and validation against real measured data from the KW51 bridge. The core is numpy-only and every
-number ships with the reference it was checked against.
+and validation against real measured data from the KW51 bridge. The core is numpy-only.
 \end{abstract}
 
 % ---------------------------------------------------------------------------
@@ -95,8 +93,6 @@ inverting the bending response of a bridge that is already instrumented. The sam
 also carries information about the structure's health (drive-by, vibration-based monitoring). The
 engineering questions are therefore those of an inverse problem: how well-posed is the recovery,
 how much can a recovered number be trusted, and does the method survive contact with real data.
-The rule throughout is that every claim is checked against a reference, and if the code disagrees
-with the reference the code is wrong.
 
 % ---------------------------------------------------------------------------
 \section{Forward model}
@@ -147,11 +143,11 @@ Equation~\eqref{eq:moses} is extended below to a Tikhonov-regularized and a Baye
 \end{figure}
 
 % ---------------------------------------------------------------------------
-\section{Verification: the math is correct}
+\section{Verification}
 % ---------------------------------------------------------------------------
 Each forward block is checked against an independent analytical reference (Table~\ref{tab:verify}).
-These are agreements with closed-form solutions to many significant figures, which is what shows
-that the assembly, boundary conditions, and integration are right.
+These are agreements with closed-form solutions to many significant figures for the assembly,
+boundary conditions, and integration.
 
 \begin{table}[h]
   \centering
@@ -194,10 +190,10 @@ that the assembly, boundary conditions, and integration are right.
 \end{figure}
 
 % ---------------------------------------------------------------------------
-\section{Validation and uncertainty: the model means something}
+\section{Validation and uncertainty}
 % ---------------------------------------------------------------------------
-Verification is not validation. The four results below separate ``the math is right'' from ``the
-answer is trustworthy''.
+Verification is not validation. The four results below address whether the recovered answer can
+be trusted.
 
 \subsection{Model-error-aware uncertainty}
 Casting Eq.~\eqref{eq:moses} as a linear-Gaussian inverse problem gives a posterior over the
@@ -207,15 +203,14 @@ follow a 95\,\% credible interval and a probability of exceeding the legal limit
 
 A self-consistent coverage test, in which the synthetic data and the inverse both use the static
 influence line, returns 95.3\,\% coverage (Fig.~\ref{fig:coverage}, right). This is reassuring but
-only verifies the linear-Gaussian machinery; it is circular. The honest test replaces the forward
+only verifies the linear-Gaussian machinery; it is circular. A stronger test replaces the forward
 model with the full coupled dynamic FEM. The recovered weight is then biased by dynamic
 amplification (about $+0.3\,\%$ quasi-static, rising to $+5\,\%$ at 40\,m/s), and because the
 residual $\sigma$ measures goodness of fit (the signal still looks influence-line-shaped) rather
 than the dynamic scale error, the nominal 95\,\% interval's true coverage collapses to nearly
-zero. The fix is physical rather than fitted: the RMS dynamic bias over the highway speed band,
+zero. The RMS dynamic bias over the highway speed band,
 about $3.1\,\%$, is the model-error term that restores calibration. Inflating the posterior by
-this physics-derived term returns the coverage to nominal, so the uncertainty is calibrated from
-the dynamics it was missing.
+this term returns the coverage to nominal.
 
 \begin{figure}[h]
   \centering
@@ -229,7 +224,7 @@ the dynamics it was missing.
     3.1\,\% physics-derived term restores it.}
   \end{subfigure}
   \caption{Model-error-aware uncertainty. The result is the gap between the circular test and the
-  honest one, and that the gap closes with a number derived from the physics rather than tuned.}
+  honest one, and that the gap closes with a physics-derived model-error term.}
   \label{fig:coverage}
 \end{figure}
 
@@ -245,7 +240,7 @@ so $\operatorname{cond}(\mathbf{C}^{\top}\mathbf{C})$ rises from about 9 at 8\,m
 with $\lambda$ chosen at the L-curve corner ($\lambda^\star\approx 7.9$), cuts the per-axle scatter
 by about $6\times$ (from 16\,\% to 2.6\,\%) for a small bias, while leaving the well-posed gross
 weight unchanged (Fig.~\ref{fig:reg}). This is the bias--variance trade-off of an ill-posed
-inverse, made explicit and controlled.
+inverse.
 
 \begin{figure}[h]
   \centering
@@ -258,7 +253,7 @@ inverse, made explicit and controlled.
 
 \subsection{Validation against real data (KW51)}
 The 16-month tracked-modal-frequency record of the instrumented KW51 railway bridge (Leuven; public
-Zenodo dataset) is ground truth no model can argue with. It confirms the drive-by-SHM premise: a
+Zenodo dataset) is independent ground truth. It confirms the drive-by-SHM premise: a
 real, dated retrofit (stiffening) shifts the modal frequencies by up to $+2.6\,\%$. It also exposes
 the dominant confounder: temperature swings the same frequencies by a comparable amount (up to
 about $3.8\,\%$), and for some modes the temperature swing exceeds the retrofit jump. Removing the
@@ -283,14 +278,14 @@ $(W/W_\text{ref})^m$: a $2\times$ overload does $8$ to $16\times$ the damage. Ov
 traffic stream the damage concentrates sharply, with the heaviest 10\,\% of trucks causing about
 45\,\% of the fatigue damage and the overloaded minority about half, and B-WIM identifies exactly
 those trucks. An asset-depreciation estimate puts one heavy crossing at about \EUR{}10 of bridge
-life against \EUR{}0.80 for a legal pass, which is the quantified case for self-funding overload
+life against \EUR{}0.80 for a legal pass, giving a per-crossing cost estimate for overload
 enforcement.
 
 \begin{figure}[h]
   \centering
   \includegraphics[width=0.9\textwidth]{fatigue_economics.png}
   \caption{From a recovered weight to a decision. The fourth-power law concentrates fatigue damage
-  in a few heavy trucks (Pareto), which B-WIM is the tool to catch.}
+  in a few heavy trucks (Pareto), which B-WIM identifies.}
   \label{fig:fatigue}
 \end{figure}
 
@@ -315,8 +310,8 @@ enforcement.
 The solver is numpy-only. Each result is produced by a \texttt{verify\_*.py} script that prints the
 numbers and saves the figure shown here: \texttt{verify\_v2.py} for Frýba, \texttt{verify\_newmark.py},
 \texttt{verify\_mor.py}, \texttt{verify\_coverage.py}, \texttt{verify\_regularize.py},
-\texttt{verify\_kw51.py}, and \texttt{verify\_fatigue.py}. An interactive web demo animates the
-crossing and the live weighing.
+\texttt{verify\_kw51.py}, and \texttt{verify\_fatigue.py}. An interactive web demo accompanies the
+report.
 \end{sloppypar}
 
 % ---------------------------------------------------------------------------
