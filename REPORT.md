@@ -47,6 +47,12 @@ code disagrees, the code is wrong.
 | Damping ζ | free-vibration log-decrement | within **0.1 %** |
 | Newmark-β vs Frýba | closed-form moving force | match to **≈ 2 × 10⁻⁴** |
 | Model order reduction (3 modes) | full-order response | reproduces to **0.16 %** |
+| Independent FEM cross-check | scikit-fem cubic-Hermite element | mid-span match to **≈ 5 × 10⁻¹³** |
+
+The static deflection is additionally reproduced by an independent finite-element library:
+`solver/verify_skfem_xcheck.py` solves the same span and central point load with scikit-fem's
+`ElementLineHermite`, and the mid-span deflection agrees with the hand-assembled core (and with
+`P L³ / 48 E I`) to about 5 × 10⁻¹³.
 
 ## 4. Validation and uncertainty (the model means something)
 
