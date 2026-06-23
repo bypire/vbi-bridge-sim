@@ -1,0 +1,31 @@
+cff-version: 1.2.0
+message: "If you use this work, please cite it as below."
+title: "Vehicle-Bridge Interaction simulator and Bridge Weigh-in-Motion inverse"
+type: software
+authors:
+  - family-names: Fil
+    given-names: Muhammet Emir
+    affiliation: RWTH Aachen University
+    orcid: "https://orcid.org/0009-0007-3254-0203"
+abstract: >-
+  An Euler-Bernoulli beam finite-element simulator of a vehicle crossing a
+  bridge, verified against the Frýba closed-form moving-load solution, with a
+  regularized Bayesian inverse that recovers axle weights from the bridge
+  response (Bridge Weigh-in-Motion) and a model-error-calibrated uncertainty.
+keywords:
+  - vehicle-bridge interaction
+  - Bridge Weigh-in-Motion
+  - Euler-Bernoulli beam
+  - finite element method
+  - inverse problem
+  - Tikhonov regularization
+  - Bayesian uncertainty
+  - structural dynamics
+repository-code: "https://github.com/bypire/vbi-bridge-sim"
+url: "https://bypire.github.io/bridgebeat/"
+date-released: 2026-06-23
+# Companion technical note archived on Zenodo:
+identifiers:
+  - type: doi
+    value: "10.5281/zenodo.20818302"
+    description: "Companion technical note (Zenodo)"
